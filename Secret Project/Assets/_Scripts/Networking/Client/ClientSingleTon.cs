@@ -23,12 +23,17 @@ namespace _Scripts.Networking.Client
                 return _instance;
             }
         }
-        public ClientGameManager GameManager { get; set; }
+        public ClientGameManager GameManager { get; private set; }
 
         public async Task<bool> CreateClientAsync()
         {
             GameManager = new ClientGameManager();
             return await GameManager.InitAsync();
+        }
+
+        private void OnDestroy()
+        {
+            GameManager?.Dispose();
         }
     }
 }

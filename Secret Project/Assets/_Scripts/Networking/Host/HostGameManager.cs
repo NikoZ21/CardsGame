@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
+using _Scripts.Networking.Server;
 using _Scripts.Networking.Shared;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
@@ -17,8 +18,9 @@ using UnityEngine.SceneManagement;
 
 namespace _Scripts.Networking.Host
 {
-    public class HostGameManager
+    public class HostGameManager : IDisposable
     {
+        public NetworkServer NetworkServer { get; private set; }
         private Allocation allocation;
         private string joinCode;
         private string lobbyId;
@@ -54,16 +56,6 @@ namespace _Scripts.Networking.Host
             RelayServerData relayServerData = new RelayServerData(allocation, "udp");
             transport.SetRelayServerData(relayServerData);
 
-            // UserData userData = new UserData
-            // {
-            //     UserName = PlayerPrefs.GetString(NameSelector.PLAYERNAMEKEY, "Missing Name"),
-            //     UserAuthId = AuthenticationService.Instance.PlayerId
-            // };
-            // string payload = JsonUtility.ToJson(userData);
-            // byte[] payloadBytes = Encoding.UTF8.GetBytes(payload);
-
-            // NetworkManager.Singleton.NetworkConfig.ConnectionData = payloadBytes;
-
             try
             {
                 CreateLobbyOptions lobbyOptions = new CreateLobbyOptions();
@@ -88,6 +80,17 @@ namespace _Scripts.Networking.Host
                 return;
             }
 
+            NetworkServer = new NetworkServer(NetworkManager.Singleton);
+
+            UserData userData = new UserData
+            {
+                UserName = PlayerPrefs.GetString(NameSelector.PLAYERNAMEKEY, "Missing Name"),
+                UserAuthId = AuthenticationService.Instance.PlayerId
+            };
+            string payload = JsonUtility.ToJson(userData);
+            byte[] payloadBytes = Encoding.UTF8.GetBytes(payload);
+
+            NetworkManager.Singleton.NetworkConfig.ConnectionData = payloadBytes;
 
             NetworkManager.Singleton.StartHost();
 
@@ -102,6 +105,27 @@ namespace _Scripts.Networking.Host
                 Lobbies.Instance.SendHeartbeatPingAsync(lobbyId);
                 yield return delay;
             }
+        }
+
+        public async void Dispose()
+        {
+            HostSingleTon.Instance.StopCoroutine(nameof(HearbeatLobby));
+
+            if (!string.IsNullOrEmpty(lobbyId))
+            {
+                try
+                {
+                    await Lobbies.Instance.DeleteLobbyAsync(lobbyId);
+                }
+                catch (LobbyServiceException e)
+                {
+                    Debug.Log(e);
+                }
+
+                lobbyId = string.Empty;
+            }
+
+            NetworkServer?.Dispose();
         }
     }
 }

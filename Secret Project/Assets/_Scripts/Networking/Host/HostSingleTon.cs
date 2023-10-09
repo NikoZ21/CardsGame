@@ -22,11 +22,16 @@ namespace _Scripts.Networking.Host
                 return _instance;
             }
         }
-        public HostGameManager GameManager { get; set; }
+        public HostGameManager GameManager { get; private set; }
 
         public void CreateHost()
         {
             GameManager = new HostGameManager();
+        }
+
+        private void OnDestroy()
+        {
+            GameManager?.Dispose();
         }
     }
 }
