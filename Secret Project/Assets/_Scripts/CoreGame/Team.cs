@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.Linq;
+using _Scripts.Networking.Host;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -11,31 +13,40 @@ namespace _Scripts.CoreGame
         [SerializeField] private Button chooseBtn;
         [SerializeField] private TeamColor teamColor;
         [SerializeField] private TextMeshProUGUI[] nameTags;
-        private int playerCount;
+        private List<Player> players = new List<Player>();
 
         public void AddPlayerWrapper()
         {
-            if (!IsClient) return;
+            var localPlayers = FindObjectsByType<Player>(FindObjectsSortMode.None);
 
-            var player = FindObjectsByType<Player>(FindObjectsSortMode.None).FirstOrDefault(p => p == IsLocalPlayer);
-            //var name = player.PlayerName.Value.ToString();
-            AddPlayerToTeamServerRpc("Goggia");
+            foreach (Player p in localPlayers)
+            {
+                Debug.Log(localPlayers.Length);
+
+                if (p.IsLocalPlayer)
+                {
+                    Debug.Log(p.PlayerName.Value);
+                    AddPlayerToTeamServerRpc(p.OwnerClientId);
+                }
+            }
         }
 
-        [ServerRpc]
-        private void AddPlayerToTeamServerRpc(string name)
+        [ServerRpc(RequireOwnership = false)]
+        private void AddPlayerToTeamServerRpc(ulong clientId)
         {
-            if (playerCount == 2) return;
-            playerCount++;
-            UpdateUIClientRpc(name, playerCount);
+            var player = HostSingleTon.Instance.GameManager.NetworkServer.ClienIdToPlayer[clientId];
+            players.Add(player);
+            UpdateUIClientRpc(player.PlayerName.Value.ToString(), players.Count);
         }
 
         [ClientRpc]
-        private void UpdateUIClientRpc(string name, int count)
+        private void UpdateUIClientRpc(string n, int c)
         {
-            chooseBtn.interactable = count < 2;
+            Debug.Log("updating UI");
+
+            chooseBtn.interactable = c < 2;
             var nameTag = nameTags.FirstOrDefault(nt => nt.text == "Empty...");
-            nameTag.text = name;
+            nameTag.text = n;
         }
     }
 

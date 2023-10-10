@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using _Scripts.CoreGame;
 using _Scripts.Networking.Shared;
 using Unity.Netcode;
 using UnityEngine;
@@ -12,6 +13,7 @@ namespace _Scripts.Networking.Server
 
         private Dictionary<ulong, string> clientIdToAuth = new Dictionary<ulong, string>();
         private Dictionary<string, UserData> authIdToUserData = new Dictionary<string, UserData>();
+        public Dictionary<ulong, Player> ClienIdToPlayer = new Dictionary<ulong, Player>();
 
         public NetworkServer(NetworkManager networkManager)
         {

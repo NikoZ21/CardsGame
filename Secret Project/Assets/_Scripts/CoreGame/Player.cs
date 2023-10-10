@@ -4,25 +4,30 @@ using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
-public class Player : NetworkBehaviour
+namespace _Scripts.CoreGame
 {
-    [SerializeField] private GameObject hud;
-    public NetworkVariable<FixedString32Bytes> PlayerName = new NetworkVariable<FixedString32Bytes>();
-
-
-    public override void OnNetworkSpawn()
+    public class Player : NetworkBehaviour
     {
-        if (IsServer)
-        {
-            UserData userData =
-                HostSingleTon.Instance.GameManager.NetworkServer.GetUserDataByClientId(OwnerClientId);
+        [SerializeField] private GameObject hud;
+        public NetworkVariable<FixedString32Bytes> PlayerName = new NetworkVariable<FixedString32Bytes>();
 
-            PlayerName.Value = userData.UserName;
-        }
 
-        if (IsClient)
+        public override void OnNetworkSpawn()
         {
-            hud.SetActive(IsLocalPlayer);
+            if (IsServer)
+            {
+                UserData userData =
+                    HostSingleTon.Instance.GameManager.NetworkServer.GetUserDataByClientId(OwnerClientId);
+
+                HostSingleTon.Instance.GameManager.NetworkServer.ClienIdToPlayer.Add(OwnerClientId, this);
+
+                PlayerName.Value = userData.UserName;
+            }
+
+            if (IsClient)
+            {
+                hud.SetActive(IsLocalPlayer);
+            }
         }
     }
 }
