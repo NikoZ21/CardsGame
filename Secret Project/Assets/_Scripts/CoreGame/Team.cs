@@ -4,6 +4,7 @@ using _Scripts.Networking.Host;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Button = UnityEngine.UI.Button;
 
 namespace _Scripts.CoreGame
@@ -14,6 +15,12 @@ namespace _Scripts.CoreGame
         [SerializeField] private TeamColor teamColor;
         [SerializeField] private TextMeshProUGUI[] nameTags;
         private List<Player> players = new List<Player>();
+        private static int playersReady;
+
+        public override void OnNetworkSpawn()
+        {
+            DontDestroyOnLoad(gameObject);
+        }
 
         public void AddPlayerWrapper()
         {
@@ -25,7 +32,6 @@ namespace _Scripts.CoreGame
 
                 if (p.IsLocalPlayer)
                 {
-                    Debug.Log(p.PlayerName.Value);
                     AddPlayerToTeamServerRpc(p.OwnerClientId);
                 }
             }
@@ -36,7 +42,14 @@ namespace _Scripts.CoreGame
         {
             var player = HostSingleTon.Instance.GameManager.NetworkServer.ClienIdToPlayer[clientId];
             players.Add(player);
+            playersReady++;
             UpdateUIClientRpc(player.PlayerName.Value.ToString(), players.Count);
+
+            if (playersReady == 2)
+            {
+                NetworkManager.Singleton.SceneManager.LoadScene("Game",
+                    LoadSceneMode.Single);
+            }
         }
 
         [ClientRpc]
